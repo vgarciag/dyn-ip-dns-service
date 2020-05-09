@@ -1,0 +1,9 @@
+---
+
+services:
+    - name: now-dns
+      user: google
+      pass: 1234
+      hosts:
+        - google.com
+        - google.es
