@@ -15,23 +15,25 @@ import yaml
 from logging.handlers import RotatingFileHandler
 
 def prepareLoggin(config):
-	# TO-DO prepare loggin from config file/ cmd line args
-	FORMAT_FILE = '%(asctime)-15s %(levelname)s %(message)s'
-	FORMAT_CONSOLE = '%(levelname)s %(message)s'
+    # TO-DO prepare loggin from config file/ cmd line args
+    FORMAT_FILE = '%(asctime)-15s %(levelname)s %(message)s'
+    FORMAT_CONSOLE = '%(levelname)s %(message)s'
 
-	rootLogger = logging.getLogger()
+    rootLogger = logging.getLogger()
 
-	# file handler
-	fileHandler = RotatingFileHandler('/tmp/dns_update.log', maxBytes=30*1024, backupCount=2)
-	fileHandler.setFormatter(logging.Formatter(FORMAT_FILE))
-	rootLogger.addHandler(fileHandler)
+    # file handler
+    fileHandler = RotatingFileHandler('/tmp/dns_update.log', maxBytes=30*1024, backupCount=2)
+    fileHandler.setFormatter(logging.Formatter(FORMAT_FILE))
+    fileHandler.setLevel(logging.WARN)
+    rootLogger.addHandler(fileHandler)
 
-	#console handler
-	consoleHandler = logging.StreamHandler()
-	consoleHandler.setFormatter(logging.Formatter(FORMAT_CONSOLE))
-	rootLogger.addHandler(consoleHandler)
+    #console handler
+    consoleHandler = logging.StreamHandler()
+    consoleHandler.setFormatter(logging.Formatter(FORMAT_CONSOLE))
 
-	rootLogger.setLevel(logging.INFO)
+    rootLogger.addHandler(consoleHandler)
+    rootLogger.setLevel(logging.INFO)
+
 
 def load_config(config_file):
     try:
@@ -80,7 +82,7 @@ def update_ip_now_dns(hostname, user, password):
         
 
     if response.text == 'good':
-        logging.log(logging.INFO, 'Servive: Now-DNS; hostname: ' + hostname + ': New IP successfully updated. Code: ' + response.text)
+        logging.log(logging.WARN, 'Servive: Now-DNS; hostname: ' + hostname + ': New IP successfully updated. Code: ' + response.text)
         return(0)
     elif response.text == 'nochg':
         logging.log(logging.INFO, 'Servive: Now-DNS; hostname: ' + hostname + ': No IP updated still the same. Code: ' + response.text)
