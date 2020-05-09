@@ -70,7 +70,9 @@ def update_ip_now_dns(hostname, user, password):
     payload = {}
     headers = {}
 
-    response = requests.request("GET", url, headers=headers, data = payload, auth=(user, password))
+    connect_timeout=5
+    read_timeout=5
+    response = requests.request("GET", url, headers=headers, data = payload, auth=(user, password), timeout=(connect_timeout,read_timeout) )
 
     if response.text == 'good':
         logging.log(logging.INFO, 'Servive: Now-DNS; hostname: ' + hostname + ': New IP successfully updated. Code: ' + response.text)
