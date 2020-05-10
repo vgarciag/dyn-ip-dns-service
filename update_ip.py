@@ -11,6 +11,7 @@ import logging
 import argparse
 import configparser
 import yaml
+import json
 
 from logging.handlers import RotatingFileHandler
 
@@ -73,11 +74,14 @@ def update_ip(config, current_ip):
                         for host in service['hosts']:
                             sum_error += update_ip_now_dns(host,service['user'],service['pass'])
                     else:
-                        logging.log(logging.ERROR, 'Each now-dns service MUST contains a valid service name in "name"; a valid user in "user" and a valid pass in "pass" and a list with the hostnames in "hosts"')
+                        logging.log(logging.ERROR, 'Each now-dns service MUST contains a valid service name in "name"; a valid user in "user"; a valid pass in "pass" and a list with the hostnames in "hosts"')
                         continue
                 elif service['name'] == 'dynu':
-                    logging.log(logging.INFO, 'To-Do: publish in dynu service')
-                    update_ip_dynu()
+                    if all (key in service for key in ('name','api_key')):
+                        sum_error += update_ip_dynu(service['api_key'],current_ip)
+                    else:
+                        logging.log(logging.ERROR, 'Each dynu service MUST contains a valid service name in "name"; a valid api_key in "api_key"')
+                        continue
                 else:
                     logging.log(logging.WARN, 'Service ' + service['name'] + ' not supported')
     else:
@@ -86,8 +90,73 @@ def update_ip(config, current_ip):
 
     return sum_error
 
-def update_ip_dynu(token, current_ip):
-    pass
+def update_ip_dynu(api_key, current_ip):
+
+    domains_json = get_dynu_domains(api_key)
+
+    all_domains_status = 0
+
+    if 'domains' in domains_json:
+        for domain in domains_json['domains']:
+
+            if current_ip == domain['ipv4Address']:
+                logging.log(logging.INFO, 'Servive: dynu.com; Domain: ' + domain['name'] + ' -> current IP (' + current_ip + ') not changed. Nothing to do.')
+                continue
+
+            logging.log(logging.WARN, 'Servive: dynu.com; Domain: ' + domain['name'] + ' -> updating the current external IP from ' + domain['ipv4Address'] + ' to ' + current_ip)
+
+            url = "https://api.dynu.com/v2/dns/" + str(domain['id'])
+
+            payload = {
+                "Name": domain['name'],
+                "Location" : "pikapi3",
+                "ipv4Address": current_ip
+            }
+            headers = {
+                'accept': 'application/json',
+                'API-Key': api_key
+            }
+
+            connect_timeout=5
+            read_timeout=5
+            try:
+                response = requests.request("POST", url, headers=headers, data = json.dumps(payload), timeout=(connect_timeout,read_timeout))
+                if response.status_code == 200:
+                    logging.log(logging.WARN,  "        Ip successfully updated")
+                else:
+                    logging.log(logging.ERROR, '        Status code: ' + str(response.status_code) + '; reason: ' + response.text)
+                    all_domains_status += 1
+
+            except requests.exceptions.RequestException as identifier:
+                logging.log(logging.ERROR, identifier)
+                all_domains_status += 1
+
+    return all_domains_status
+
+def get_dynu_domains(api_key):
+    url = "https://api.dynu.com/v2/dns"
+
+    payload = {}
+    headers = {
+        'accept': 'application/json',
+        'API-Key': api_key
+    }
+
+    connect_timeout=5
+    read_timeout=5
+    try:
+        response = requests.request("GET", url, headers=headers, data = payload, timeout=(connect_timeout,read_timeout))
+    except requests.exceptions.RequestException as identifier:
+        logging.log(logging.ERROR, "Error geting domains in dynu: ")
+        logging.log(logging.ERROR, identifier)
+        return {}
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        logging.log(logging.ERROR, "Error geting domains in dynu. Status code: " + str(response.status_code) + " return an empty json")
+        return {}
+
 
 def update_ip_now_dns(hostname, user, password):
 
@@ -103,7 +172,6 @@ def update_ip_now_dns(hostname, user, password):
     except requests.exceptions.RequestException as identifier:
         logging.log(logging.ERROR, identifier)
         return 1
-        
 
     if response.text == 'good':
         logging.log(logging.WARN, 'Servive: Now-DNS; hostname: ' + hostname + ': New IP successfully updated. Code: ' + response.text)
