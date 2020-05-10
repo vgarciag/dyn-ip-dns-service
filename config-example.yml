@@ -7,3 +7,5 @@ services:
       hosts:
         - google.com
         - google.es
+    - name: dynu
+      api_key: 'a_valid_api_key'
