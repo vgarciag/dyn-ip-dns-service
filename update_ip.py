@@ -46,24 +46,48 @@ def load_config(config_file):
         print(exc_yaml)
         exit(1)
 
-def update_ip(config):
+def get_current_external_ip():
+
+    url = 'https://api.ipify.org'
+    connect_timeout=2
+    read_timeout=2
+    try:
+        response = requests.request("GET", url, timeout=(connect_timeout,read_timeout))
+        return response.text
+    except requests.exceptions.RequestException as identifier:
+        logging.log(logging.ERROR, 'Error getting current external IP')
+        logging.log(logging.ERROR, identifier)
+        return 'ERROR'
+
+def update_ip(config, current_ip):
 
     sum_error = 0
     if 'services' in config:
         for service in config['services']:
-            if all (key in service for key in ('name','hosts','user','pass')):
-                if service['name'] == 'now-dns':
-                    for host in service['hosts']:
-                        sum_error += update_ip_now_dns(host,service['user'],service['pass'])
+            if not 'name' in service:
+                logging.log(logging.WARN, 'Each service MUST have a name in order to work')
+                continue
             else:
-                logging.log(logging.ERROR, 'Each service MUST contains a valid service name in "name"; a valid user in "user" and a valid pass in "pass" and a list with the hostnames in "hosts"')
-                return 1
-
+                if service['name'] == 'now-dns':
+                    if all (key in service for key in ('name','hosts','user','pass')):
+                        for host in service['hosts']:
+                            sum_error += update_ip_now_dns(host,service['user'],service['pass'])
+                    else:
+                        logging.log(logging.ERROR, 'Each now-dns service MUST contains a valid service name in "name"; a valid user in "user" and a valid pass in "pass" and a list with the hostnames in "hosts"')
+                        continue
+                elif service['name'] == 'dynu':
+                    logging.log(logging.INFO, 'To-Do: publish in dynu service')
+                    update_ip_dynu()
+                else:
+                    logging.log(logging.WARN, 'Service ' + service['name'] + ' not supported')
     else:
         logging.log(logging.ERROR, 'the config file has no section "services"')
         return 1
 
     return sum_error
+
+def update_ip_dynu(token, current_ip):
+    pass
 
 def update_ip_now_dns(hostname, user, password):
 
@@ -120,10 +144,11 @@ if __name__ == "__main__":
     pargs = process_args()
     config_read = load_config(pargs.config_file)
     prepareLoggin(config_read)
-    status = update_ip(config_read)
+    current_ip = get_current_external_ip()
+    status = update_ip(config_read, current_ip)
     if status > 0:
-        logging.log(logging.ERROR, 'Something went wrong')
+        logging.log(logging.ERROR, 'Current external IP: ' + current_ip + ' Something went wrong :-(')
     else:
-        logging.log(logging.INFO, 'All OK :-)')
+        logging.log(logging.INFO, 'Current external IP: ' + current_ip + ' All OK :-)')
 
     exit(status)
