@@ -1,0 +1,11 @@
+[Unit]
+Description=Runs the update external IP service
+Wants=update_external_ip.timer
+
+[Service]
+User=user
+ExecStart=/home/user/dyn-ip-dns-service/update_ip.py -c /home/user/.config-dyn-dns.yml
+WorkingDirectory=/home/user/dyn-ip-dns-service
+
+[Install]
+WantedBy=default.target

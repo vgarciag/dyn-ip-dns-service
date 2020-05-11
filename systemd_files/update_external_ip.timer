@@ -1,0 +1,11 @@
+[Unit]
+Description=Runs update_external_ip.service 
+Requires=update_external_ip.service
+
+[Timer]
+Unit=update_external_ip.service
+OnBootSec=1m
+OnUnitActiveSec=1m
+
+[Install]
+WantedBy=timers.target

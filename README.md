@@ -83,44 +83,46 @@ Every minute service in dynu and every 5 minuts now-dns:
 */5 * * * * /home/user/dyn-ip-dns-service/update_ip.py -c ~/.config-now-dns.yml
 ```
 
-Or by using systemd (clones and configured in `/home/user` for the user `user`)
+Or by **using systemd**.
 
-systemd service file: `/usr/lib/systemd/system/update_external_ip.service`
+The example is using the user `user` cloned and configured in `/home/user`:
 
-```
-[Unit]
-Description=Runs the update external IP service
-Wants=update_external_ip.timer
-[Service]
-User=user
-ExecStart=/home/user/dyn-ip-dns-service/update_ip.py -c /home/user/.config-dyn-dns.yml
-WorkingDirectory=/home/user/dyn-ip-dns-service
-[Install]
-WantedBy=default.target
-```
+- systemd service file: `/usr/lib/systemd/system/update_external_ip.service`
 
-Refresh the daemon: `sudo systemctl daemon-reload`
+    ```
+    [Unit]
+    Description=Runs the update external IP service
+    Wants=update_external_ip.timer
+    [Service]
+    User=user
+    ExecStart=/home/user/dyn-ip-dns-service/update_ip.py -c /home/user/.config-dyn-dns.yml
+    WorkingDirectory=/home/user/dyn-ip-dns-service
+    [Install]
+    WantedBy=default.target
+    ```
 
-To test service: `sudo systemctl start update_external_ip.service`
-View the result:  `systemctl status update_external_ip.service`
+    Refresh the daemon: `sudo systemctl daemon-reload`
 
-systemd timer file: `/usr/lib/systemd/system/update_external_ip.timer`
+    To test service: `sudo systemctl start update_external_ip.service`
+    View the result:  `systemctl status update_external_ip.service`
 
-```
-[Unit]
-Description=Runs update_external_ip.service 
-Requires=update_external_ip.service
-[Timer]
-Unit=update_external_ip.service
-OnBootSec=1m
-OnUnitActiveSec=1m 
-[Install]
-WantedBy=timers.target
-```
+- systemd timer file: `/usr/lib/systemd/system/update_external_ip.timer`
 
-Refresh the daemon: `sudo systemctl daemon-reload`
+    ```
+    [Unit]
+    Description=Runs update_external_ip.service 
+    Requires=update_external_ip.service
+    [Timer]
+    Unit=update_external_ip.service
+    OnBootSec=1m
+    OnUnitActiveSec=1m 
+    [Install]
+    WantedBy=timers.target
+    ```
 
-To start timer: `sudo systemctl start update_external_ip.timer`
-Enable at boot: `sudo systemctl enable update_external_ip.timer`
+    Refresh the daemon: `sudo systemctl daemon-reload`
 
-Check id runs: `systemctl status update_external_ip.timer`
+    To start timer: `sudo systemctl start update_external_ip.timer`
+    Enable at boot: `sudo systemctl enable update_external_ip.timer`
+
+    Check id runs: `systemctl status update_external_ip.timer`
